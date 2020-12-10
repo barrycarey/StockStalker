@@ -42,8 +42,8 @@ class NeweggParser(ParserBase):
                 results.append(product_data)
         return results
 
-    def parse_product_page(self, page) -> Dict:
-        return super().parse_product_page(page)
+    def parse_product_page(self, page: BeautifulSoup) -> ProductInfo:
+        title = page.find('h1', {'class': 'product-title'}).text
 
     def check_stock(self) -> NoReturn:
         results = self.check_search_pages()

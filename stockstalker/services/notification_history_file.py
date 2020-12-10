@@ -20,8 +20,8 @@ class NotificationHistoryFile(NotificationHistoryBase):
         if not os.path.isfile(self.history_file_name):
             log.info('Unable to locate history file %s. Skipping Load', self.history_file_name)
             return
-        with open(self.history_file_name, 'a') as f:
-            for line in f.read():
+        with open(self.history_file_name, 'r') as f:
+            for line in f:
                 self.sent_notifications.append(line)
         log.info('Loaded %s notifications from history', len(self.sent_notifications))
 
