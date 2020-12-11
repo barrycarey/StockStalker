@@ -44,6 +44,9 @@ class NeweggParser(ParserBase):
 
     def parse_product_page(self, page: BeautifulSoup) -> ProductInfo:
         title = page.find('h1', {'class': 'product-title'}).text
+        price_box = page.find('price-current')
+        if price_box:
+            price = price_box.find('strong').text
 
     def check_stock(self) -> NoReturn:
         results = self.check_search_pages()
