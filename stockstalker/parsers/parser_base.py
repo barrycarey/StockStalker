@@ -13,7 +13,6 @@ class ParserBase:
             notification_svc: NotificationSvc,
             search_pages: List[Text] = None,
             product_pages: List[Text] = None,
-            web_driver: Text = None,
             ignore_urls=None,
             ignore_title_keywords=None
     ):
@@ -24,10 +23,8 @@ class ParserBase:
         self.ignore_title_keywords = ignore_title_keywords
         self.ignore_urls = ignore_urls
         self.product_pages = product_pages
-        self.web_driver = web_driver
         self.notification_svc = notification_svc
         self.search_pages = search_pages
-        self.web_driver = webdriver.Chrome(executable_path=web_driver)
         self.notification_sent_urls = []
 
     def add_search_pages(self, url: Text) -> NoReturn:
@@ -66,8 +63,7 @@ class ParserBase:
         raise NotImplementedError
 
     def _load_page(self, url: Text) -> Text:
-        self.web_driver.get(url)
-        return self.web_driver.page_source
+        raise NotImplementedError
 
     def format_notification(self, data: ProductInfo):
         msg = '**Instock Alert**\n{title}\n{url}'.format(**data)
