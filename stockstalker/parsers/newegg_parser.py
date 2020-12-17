@@ -62,6 +62,7 @@ class NeweggParser(ParserBase):
 
     def check_stock(self) -> NoReturn:
         results = self.check_search_pages()
+        results += self.check_product_pages()
         for r in results:
             if r.in_stock:
                 self.notification_svc.send_notificaiton(self.format_notification(r.to_dict()), r.url)
