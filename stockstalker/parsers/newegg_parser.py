@@ -14,6 +14,7 @@ from stockstalker.util.constants import USER_AGENTS
 
 
 class NeweggParser(ParserBase):
+
     def __init__(
             self,
             notification_svc: NotificationSvc,
@@ -24,6 +25,7 @@ class NeweggParser(ParserBase):
     ):
         super().__init__(notification_svc, search_pages, product_pages, ignore_urls=ignore_urls,
                          ignore_title_keywords=ignore_title_keywords)
+
 
     def add_search_pages(self, url: Text) -> NoReturn:
         super().add_search_pages(url)
@@ -74,7 +76,7 @@ class NeweggParser(ParserBase):
             if not page_source:
                 log.error('Did not get page source.  Skipping %s', page)
                 continue
-            page = BeautifulSoup(page_source)
+            page = BeautifulSoup(page_source, 'html.parser')
             all_results += self.parse_search_page(page)
         return all_results
 
@@ -91,31 +93,40 @@ class NeweggParser(ParserBase):
         return all_results
 
     def _get_product_data_from_search_result(self, search_result: Tag) -> Optional[ProductInfo]:
-        title, url = self._get_title_and_url_from_search_result(search_result)
         result = ProductInfo(
-            title=title,
-            url=url,
-            in_stock=self._is_in_stock(search_result)
+            title=self._get_title_from_search_result(search_result),
+            url=self._get_url_from_search_result(search_result),
+            in_stock=self._is_in_stock_search_result(search_result)
         )
         if self.is_ignored(result):
             return
 
         return result
 
-    def _get_title_and_url_from_search_result(self, item: Tag):
+    def _get_title_from_search_result(self, item: Tag) -> Optional[Text]:
         info_box = item.find('div', {'class': 'item-info'})
         if not info_box:
             log.error('Did not locate product info box')
-            return None, None
+            return None
         product_link = info_box.find('a', {'class': 'item-title'})
         if not product_link:
             log.error('Did not locate product link')
-            return None, None
-        url = product_link['href']
-        title = product_link.text
-        return title, url
+            return None
 
-    def _is_in_stock(self, search_result: Tag) -> bool:
+        return product_link.text
+
+    def _get_url_from_search_result(self, item: Tag) -> Optional[Text]:
+        info_box = item.find('div', {'class': 'item-info'})
+        if not info_box:
+            log.error('Did not locate product info box')
+            return None
+        product_link = info_box.find('a', {'class': 'item-title'})
+        if not product_link:
+            log.error('Did not locate product link')
+            return None
+        return product_link['href']
+
+    def _is_in_stock_search_result(self, search_result: Tag) -> bool:
 
         btn_box = search_result.find('div', {'class': 'item-button-area'})
         if not btn_box:

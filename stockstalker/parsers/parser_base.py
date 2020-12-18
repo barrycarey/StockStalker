@@ -1,5 +1,6 @@
-from typing import List, Text, NoReturn, Dict
+from typing import List, Text, NoReturn, Dict, Optional
 
+from bs4 import BeautifulSoup, Tag
 from selenium import webdriver
 
 from stockstalker.common.logging import log
@@ -47,22 +48,43 @@ class ParserBase:
             return True
         return False
 
-    def parse_search_page(self, page) -> List[Dict]:
+    def parse_search_page(self, page: BeautifulSoup) -> List[Dict]:
         raise NotImplementedError
 
-    def parse_product_page(self, page) -> Dict:
+    def parse_product_page(self, page: BeautifulSoup) -> Dict:
         raise NotImplementedError
 
     def check_stock(self) -> NoReturn:
         raise NotImplementedError
 
-    def check_search_pages(self) -> List[Dict]:
+    def check_search_pages(self) -> List[ProductInfo]:
         raise NotImplementedError
 
-    def check_product_pages(self) -> List[Dict]:
+    def check_product_pages(self) -> List[ProductInfo]:
         raise NotImplementedError
 
     def _load_page(self, url: Text) -> Text:
+        raise NotImplementedError
+
+    def _is_in_stock_search_result(self, page: BeautifulSoup) -> bool:
+        raise NotImplementedError
+
+    def _get_title_from_search_result(self, item: Tag) -> Optional[Text]:
+        raise NotImplementedError
+
+    def _get_url_from_search_result(self, item: Tag) -> Optional[Text]:
+        raise NotImplementedError
+
+    def _get_price_from_search_result(self, item: Tag) -> Optional[Text]:
+        raise NotImplementedError
+
+    def _is_in_stock_product_page(self, page: BeautifulSoup) -> bool:
+        raise NotImplementedError
+
+    def _get_sku_from_product_page(self, page: BeautifulSoup) -> Optional[Text]:
+        raise NotImplementedError
+
+    def _get_price_from_product_page(self, page: BeautifulSoup) -> Optional[Text]:
         raise NotImplementedError
 
     def format_notification(self, data: ProductInfo):
