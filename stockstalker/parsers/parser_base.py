@@ -1,10 +1,9 @@
 from typing import List, Text, NoReturn, Dict, Optional
 
 from bs4 import BeautifulSoup, Tag
-from selenium import webdriver
 
 from stockstalker.common.logging import log
-from stockstalker.product_info import ProductInfo
+from stockstalker.models.product_info import ProductInfo
 from stockstalker.services.notification_svc import NotificationSvc
 
 
@@ -12,6 +11,7 @@ class ParserBase:
     def __init__(
             self,
             notification_svc: NotificationSvc,
+            name: Text,
             search_pages: List[Text] = None,
             product_pages: List[Text] = None,
             ignore_urls=None,

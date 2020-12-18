@@ -1,11 +1,11 @@
 import random
-from typing import List, Text, Dict, NoReturn, Optional
+from typing import List, Text, NoReturn, Optional
 
 import requests
 from bs4 import BeautifulSoup, Tag
 
 from stockstalker.common.logging import log
-from stockstalker.product_info import ProductInfo
+from stockstalker.models.product_info import ProductInfo
 from stockstalker.services.notification_svc import NotificationSvc
 from stockstalker.parsers.parser_base import ParserBase
 from requests.exceptions import Timeout, ConnectionError
@@ -18,12 +18,13 @@ class NeweggParser(ParserBase):
     def __init__(
             self,
             notification_svc: NotificationSvc,
+            name: Text,
             search_pages: List[Text] = None,
             product_pages: List[Text] = None,
             ignore_urls: List[Text] = None,
             ignore_title_keywords: List[Text] = None
     ):
-        super().__init__(notification_svc, search_pages, product_pages, ignore_urls=ignore_urls,
+        super().__init__(notification_svc, name, search_pages, product_pages, ignore_urls=ignore_urls,
                          ignore_title_keywords=ignore_title_keywords)
 
 

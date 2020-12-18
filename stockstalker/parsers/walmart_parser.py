@@ -4,11 +4,22 @@ from bs4 import BeautifulSoup, Tag
 
 from stockstalker.common.logging import log
 from stockstalker.parsers.parser_base import ParserBase
-from stockstalker.product_info import ProductInfo
+from stockstalker.models.product_info import ProductInfo
 from stockstalker.services.notification_svc import NotificationSvc
 
 
 class WalmartParser(ParserBase):
+
+    def __init__(
+            self,
+            notification_svc: NotificationSvc,
+            name: Text,
+            search_pages: List[Text] = None,
+            product_pages: List[Text] = None,
+            ignore_urls=None,
+            ignore_title_keywords=None
+    ):
+        super().__init__(notification_svc, name, search_pages, product_pages, ignore_urls, ignore_title_keywords)
 
     def _get_price_from_search_result(self, item: Tag) -> Optional[Text]:
         price_block = item.find('span', {'class': 'price-main-block'})
@@ -109,7 +120,5 @@ class WalmartParser(ParserBase):
         matches = result.findAll(text='Sponsored Product')
         return len(matches) > 0
 
-    def __init__(self, notification_svc: NotificationSvc, search_pages: List[Text] = None,
-                 product_pages: List[Text] = None, ignore_urls=None, ignore_title_keywords=None):
-        super().__init__(notification_svc, search_pages, product_pages, ignore_urls, ignore_title_keywords)
+
 

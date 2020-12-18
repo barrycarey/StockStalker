@@ -11,7 +11,7 @@ class TestWalmartParser(TestCase):
 
     def __init__(self, *args, **kwargs):
         super(TestWalmartParser, self).__init__(*args, **kwargs)
-        self.parser = WalmartParser(MagicMock())
+        self.parser = WalmartParser(MagicMock(), "walmart")
 
     def get_product_page_in_stock(self):
         with open(os.path.join(self.get_example_page_dir(), 'walmart_product_instock.html'), 'r') as f:

@@ -1,0 +1,24 @@
+{
+  "name": "Newegg",
+  "links": {
+    "product_pages": [
+
+    ],
+    "search_pages": [
+
+    ]
+  },
+  "ignore_title_keywords": [
+
+  ],
+  "ignore_urls": [
+
+  ],
+  "notification_agents": [
+    {
+      "name": "discord",
+      "webhook": ""
+    }
+
+  ]
+}

@@ -25,4 +25,5 @@ class NotificationSvc:
                 log.exception('Failed to send notification', exc_info=True)
 
     def register_agent(self, agent: NotificationAgent) -> NoReturn:
+        log.info('Registered notification agent %s', agent.name)
         self.notificaiton_agents.append(agent)
