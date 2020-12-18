@@ -47,29 +47,27 @@ class TestWalmartParser(TestCase):
             if not tail:
                 break
 
-    def test_parse_search_page(self):
-        self.fail()
 
-    def test_parse_product_page(self):
-        self.fail()
+    def test__is_in_stock_search_result_false(self):
+        search_result = self.get_search_result()
+        for btn in search_result.findAll('button'):
+            btn.decompose()
+        self.assertFalse(self.parser._is_in_stock_search_result(search_result))
 
-    def test_check_stock(self):
-        self.fail()
+    def test__is_in_stock_search_result_true(self):
+        search_result = self.get_search_result()
+        self.assertTrue(self.parser._is_in_stock_search_result(search_result))
 
-    def test_check_search_pages(self):
-        self.fail()
+    def test__get_title_from_search_result_valid(self):
+        search_result = self.get_search_result()
+        self.assertEqual('Sackboy: A Big Adventure, Sony, PlayStation 5',
+                         self.parser._get_title_from_search_result(search_result))
 
-    def test_check_product_pages(self):
-        self.fail()
-
-    def test__load_page(self):
-        self.fail()
-
-    def test__is_in_stock_search_result(self):
-        self.fail()
-
-    def test__get_title_from_search_result(self):
-        self.fail()
+    def test__get_title_from_search_result_no_title(self):
+        search_result = self.get_search_result()
+        title_link_a = search_result.find('a', {'class': 'product-title-link'})
+        title_link_a.decompose()
+        self.assertIsNone(self.parser._get_title_from_search_result(search_result))
 
     def test__get_url_from_search_result_valid(self):
         search_result = self.get_search_result()
@@ -96,7 +94,7 @@ class TestWalmartParser(TestCase):
 
     def test__get_price_from_product_page_valid(self):
         page = self.get_product_page_in_stock()
-        self.assertEqual('$499.00', self.parser._get_price_from_product_page(page))
+        self.assertEqual('$69.96', self.parser._get_price_from_product_page(page))
 
     def test__get_price_from_product_page_no_price(self):
         page = self.get_product_page_in_stock()

@@ -7,6 +7,12 @@
 
     ]
   },
+  "ignore_title_keywords": [
+
+  ],
+  "ignore_urls": [
+
+  ],
   "notifications": [
     "discord"
   ]

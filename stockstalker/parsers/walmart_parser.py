@@ -39,11 +39,18 @@ class WalmartParser(ParserBase):
     def _load_page(self, url: Text) -> Text:
         pass
 
-    def _is_in_stock_search_result(self, page: BeautifulSoup) -> bool:
-        pass
+    def _is_in_stock_search_result(self, item: Tag) -> bool:
+        for btn in item.findAll('button'):
+            if 'add to cart' in btn.text.lower():
+                return True
+            return False
 
     def _get_title_from_search_result(self, item: Tag) -> Optional[Text]:
-        pass
+        title_link_a = item.find('a', {'class': 'product-title-link'})
+        if not title_link_a:
+            log.error('Failed to find title link')
+            return
+        return title_link_a.text
 
     def _get_url_from_search_result(self, item: Tag) -> Optional[Text]:
         title_link_a = item.find('a', {'class': 'product-title-link'})
