@@ -1,9 +1,11 @@
 # Stock Stalker
-### A bot to notify your when products come back in stock
+### A bot to monitor product stock, notify and purchase 
 
-#### Supported Sites
+#### Planned Site Support
 - Newegg.com
 - Bestbuy.com
+- Walmart.com
+- Amazon.com
 
 #### Supported Notification Services
 - Discord
