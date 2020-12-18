@@ -55,10 +55,14 @@ class NeweggParser(ParserBase):
             sku=self._get_sku_from_product_page(page),
             price=self._get_price_from_product_page(page)
         )
+        if self.is_ignored(product_info):
+            return None
+        
         return product_info
 
     def check_stock(self) -> NoReturn:
         results = self.check_search_pages()
+        results += self.check_product_pages()
         for r in results:
             if r.in_stock:
                 self.notification_svc.send_notificaiton(self.format_notification(r.to_dict()), r.url)
@@ -100,7 +104,13 @@ class NeweggParser(ParserBase):
 
     def _get_title_and_url_from_search_result(self, item: Tag):
         info_box = item.find('div', {'class': 'item-info'})
+        if not info_box:
+            log.error('Did not locate product info box')
+            return None, None
         product_link = info_box.find('a', {'class': 'item-title'})
+        if not product_link:
+            log.error('Did not locate product link')
+            return None, None
         url = product_link['href']
         title = product_link.text
         return title, url
@@ -108,8 +118,12 @@ class NeweggParser(ParserBase):
     def _is_in_stock(self, search_result: Tag) -> bool:
 
         btn_box = search_result.find('div', {'class': 'item-button-area'})
+        if not btn_box:
+            log.error('Did not find button box')
+            return False
         btn = btn_box.find('button')
         if not btn:
+            log.error('Did not find button')
             return False
         log.debug('Button Text: %s', btn.text)
         if btn.text.lower().strip() == 'add to cart':
@@ -132,7 +146,15 @@ class NeweggParser(ParserBase):
         if not breadcrumb_box:
             log.error('Failed to get breadcrumb box from page')
             return
-        sku = breadcrumb_box.find('li', {'class': 'is-current'}).find('em').text
+        sku_box = breadcrumb_box.find('li', {'class': 'is-current'})
+        if not sku_box:
+            log.error('Failed to find SKU box')
+            return
+        sku_text_box = sku_box.find('em')
+        if not sku_text_box:
+            log.error('Failed to find SKU text box')
+            return
+        sku = sku_text_box.text
         log.debug('Found SKU %s', sku)
         return sku
 
@@ -141,7 +163,11 @@ class NeweggParser(ParserBase):
         if not price_box:
             log.error('Failed to find price box')
             return
-        price = price_box.find('strong').text
+        price_text_box = price_box.find('strong')
+        if not price_text_box:
+            log.error('Failed to find price text box')
+            return
+        price = price_text_box.text
         log.debug('Price is %s', price)
         return price
 
@@ -169,7 +195,7 @@ class NeweggParser(ParserBase):
             return True
         current_item = breadcrumbs.find('li', {'class': 'is-current'})
         if not current_item:
-            log.debug('Failed to find breadcrumbs, assuming combo page')
+            log.debug('Failed to current item in breadcrumbs, assuming combo page')
             return True
         if 'combo' in current_item.text.lower():
             log.debug('Current page is combo page')
