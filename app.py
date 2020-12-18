@@ -12,6 +12,6 @@ product_pages = [
 ]
 ignore_keywords = ['Gladiator']
 notify_svc = NotificationSvc(NotificationHistoryFile('history.log'))
-notify_svc.register_agent(DiscordAgent('https://discordapp.com/api/webhooks/786096935039139840/RnKGFPi0aMKqSMUie1CcXHNig3tRY33JBKQQWU_v-Q4c1PHrD-l0czd9mhH94PxR1SJk', 'Discord'))
+notify_svc.register_agent(DiscordAgent('', 'Discord'))
 parser = NeweggParser(notify_svc, search_pages=search_pages, product_pages=product_pages, ignore_title_keywords=[])
 parser.check_product_pages()
