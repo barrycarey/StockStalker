@@ -1,5 +1,6 @@
 from unittest import TestCase
 
+from stockstalker.common.exceptions import InvalidNotificationAgentConfig
 from stockstalker.notifyagents.discord_agent import DiscordAgent
 from stockstalker.notifyagents.notification_agent_helpers import get_discord_agent, notification_agent_factory
 
@@ -32,7 +33,7 @@ class Test(TestCase):
         self.assertEqual('www.webhook.com', agent.webhook_url)
 
     def test_get_discord_agent_no_webhook(self):
-        self.assertRaises(ValueError, get_discord_agent, {'name': 'discord'})
+        self.assertRaises(InvalidNotificationAgentConfig, get_discord_agent, {'name': 'discord'})
 
     def test_get_discord_agent_empty_webhook(self):
-        self.assertRaises(ValueError, get_discord_agent, {'name': 'discord', 'webhook': ''})
+        self.assertRaises(InvalidNotificationAgentConfig, get_discord_agent, {'name': 'discord', 'webhook': ''})

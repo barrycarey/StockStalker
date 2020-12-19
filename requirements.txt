@@ -3,3 +3,4 @@ requests
 selenium
 discord
 apscheduler
+requests-html

@@ -20,4 +20,5 @@ if __name__ == '__main__':
     for config in configs:
         parsers.append(parser_factory(config))
 
+    parsers[0].check_stock()
     print('')

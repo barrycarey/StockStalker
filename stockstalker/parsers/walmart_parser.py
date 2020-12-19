@@ -1,11 +1,17 @@
+import random
 from typing import Text, List, Dict, NoReturn, Optional
 
+import requests
 from bs4 import BeautifulSoup, Tag
+from requests import Timeout
+from selenium import webdriver
+from selenium.webdriver.chrome.options import Options
 
 from stockstalker.common.logging import log
 from stockstalker.parsers.parser_base import ParserBase
 from stockstalker.models.product_info import ProductInfo
 from stockstalker.services.notification_svc import NotificationSvc
+from stockstalker.util.constants import USER_AGENTS
 
 
 class WalmartParser(ParserBase):
@@ -19,7 +25,37 @@ class WalmartParser(ParserBase):
             ignore_urls=None,
             ignore_title_keywords=None
     ):
+        options = Options()
+        options.add_argument('--headless')
+        options.add_argument('--no-sandbox')
+        options.add_argument('--disable-gpu')
+        #self.web_driver = webdriver.Chrome(options=options)
         super().__init__(notification_svc, name, search_pages, product_pages, ignore_urls, ignore_title_keywords)
+
+    def check_product_pages(self) -> List[ProductInfo]:
+        all_results = []
+        for url in self.product_pages:
+            log.info('Checking product page: %s', url)
+            page_source = self._load_page(url)
+            page = BeautifulSoup(page_source, 'html.parser')
+
+            result = self.parse_product_page(page)
+            if result:
+                result.url = url
+                all_results.append(result)
+        return all_results
+
+    def _load_page(self, url: Text) -> Optional[Text]:
+        try:
+            headers = {'User-Agent': random.choice(USER_AGENTS)}
+            r = requests.get(url, headers=headers, cookies={'next-day': 'null|true|true|null|1608350760'})
+        except (ConnectionError, Timeout):
+            log.error('Failed to load URL: %s', url)
+            return
+        if r.status_code != 200:
+            log.error('Unexpected Status Code %s for URL %s', r.status_code, url)
+            return
+        return r.text
 
     def _get_price_from_search_result(self, item: Tag) -> Optional[Text]:
         price_block = item.find('span', {'class': 'price-main-block'})
@@ -31,24 +67,6 @@ class WalmartParser(ParserBase):
             log.error('Failed to find price group')
             return
         return price_group.text
-
-    def parse_search_page(self, page: BeautifulSoup) -> List[Dict]:
-        pass
-
-    def parse_product_page(self, page: BeautifulSoup) -> Dict:
-        pass
-
-    def check_stock(self) -> NoReturn:
-        pass
-
-    def check_search_pages(self) -> List[ProductInfo]:
-        pass
-
-    def check_product_pages(self) -> List[ProductInfo]:
-        pass
-
-    def _load_page(self, url: Text) -> Text:
-        pass
 
     def _is_in_stock_search_result(self, item: Tag) -> bool:
         for btn in item.findAll('button'):
@@ -74,14 +92,21 @@ class WalmartParser(ParserBase):
 
         return link
 
+    def _get_title_from_product_page(self, page: BeautifulSoup) -> Optional[Text]:
+        title_box = page.find('h1', {'class': 'prod-ProductTitle'})
+        if not title_box:
+            log.error('Failed to find title box')
+            return
+        return title_box.text
+
     def _is_in_stock_product_page(self, page: BeautifulSoup) -> bool:
         product_overview = page.find('div', id='product-overview')
         if not product_overview:
             log.error('Failed to find product overview')
-            return
+            return False
         for btn in product_overview.findAll('button', {'data-tl-id': 'ProductPrimaryCTA-cta_add_to_cart_button'}):
-            print(btn.text)
-            if btn.text.lower() == 'add to cart':
+            btn_text = btn.text.strip('\n')
+            if btn_text.lower() == 'add to cart':
                 return True
         return False
 
@@ -115,6 +140,12 @@ class WalmartParser(ParserBase):
         price += price_section.find('span', {'class': 'price-mantissa'}).text
         return price
 
+    def _get_search_results(self, page: BeautifulSoup) -> List[Tag]:
+        result_box = page.find('div', {'class': 'search-result-listview-items'})
+        if not result_box:
+            log.error('Failed to find search result box')
+            return []
+        return result_box.findAll('div', {'data-automation-id' :'search-result-listview-item'})
 
     def _is_sponsored_search_result(self, result: Tag) -> bool:
         matches = result.findAll(text='Sponsored Product')

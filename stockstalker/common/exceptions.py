@@ -8,3 +8,8 @@ class NoNotificationAgents(StockStalkerException):
 class InvalidConfigDirectory(StockStalkerException):
     def __init__(self, message):
         super(InvalidConfigDirectory, self).__init__(message)
+
+class InvalidNotificationAgentConfig(StockStalkerException):
+    def __init__(self, message):
+        super(InvalidNotificationAgentConfig, self).__init__(message)
+

@@ -34,75 +34,21 @@ class NeweggParser(ParserBase):
     def add_product_page(self, url: Text) -> NoReturn:
         super().add_product_page(url)
 
-    def parse_search_page(self, page: BeautifulSoup) -> List[ProductInfo]:
-        results = []
-        result_container = page.find('div', {'class': 'list-wrap'})
-        search_results = result_container.findAll('div', {'class': 'item-cell'})
-        for r in search_results:
-            ad_box = r.find('a', {'class': 'txt-ads-box'})
-            if ad_box:
-                log.info('Skipping ad in search results')
-                continue
-            product_data = self._get_product_data_from_search_result(r)
-            if product_data:
-                results.append(product_data)
-        return results
-
-    def parse_product_page(self, page: BeautifulSoup) -> Optional[ProductInfo]:
-        if self._is_combo_page(page):
-            return
-        product_info = ProductInfo(
-            url=None,
-            title=page.find('h1', {'class': 'product-title'}).text,
-            in_stock=self._is_in_stock_product_page(page),
-            sku=self._get_sku_from_product_page(page),
-            price=self._get_price_from_product_page(page)
-        )
-        if self.is_ignored(product_info):
-            return None
-        
-        return product_info
-
-    def check_stock(self) -> NoReturn:
-        results = self.check_search_pages()
-        results += self.check_product_pages()
-        for r in results:
-            if r.in_stock:
-                self.notification_svc.send_notificaiton(self.format_notification(r.to_dict()), r.url)
-
-    def check_search_pages(self) -> List[ProductInfo]:
-        all_results = []
-        for page in self.search_pages:
-            page_source = self._load_page(page)
-            if not page_source:
-                log.error('Did not get page source.  Skipping %s', page)
-                continue
-            page = BeautifulSoup(page_source, 'html.parser')
-            all_results += self.parse_search_page(page)
-        return all_results
-
     def check_product_pages(self) -> List[ProductInfo]:
         all_results = []
         for url in self.product_pages:
             log.info('Checking product page: %s', url)
             page_source = self._load_page(url)
-            url = BeautifulSoup(page_source)
-            result = self.parse_product_page(url)
+            page = BeautifulSoup(page_source, 'html.parser')
+
+            if self._is_combo_page(page):
+                continue
+
+            result = self.parse_product_page(page)
             if result:
                 result.url = url
                 all_results.append(result)
         return all_results
-
-    def _get_product_data_from_search_result(self, search_result: Tag) -> Optional[ProductInfo]:
-        result = ProductInfo(
-            title=self._get_title_from_search_result(search_result),
-            url=self._get_url_from_search_result(search_result),
-            in_stock=self._is_in_stock_search_result(search_result)
-        )
-        if self.is_ignored(result):
-            return
-
-        return result
 
     def _get_title_from_search_result(self, item: Tag) -> Optional[Text]:
         info_box = item.find('div', {'class': 'item-info'})
@@ -115,6 +61,15 @@ class NeweggParser(ParserBase):
             return None
 
         return product_link.text
+
+    def _get_price_from_search_result(self, item: Tag) -> Optional[Text]:
+        price_box = item.find('li', {'class': 'price-current'})
+        if not price_box:
+            log.error('Failed to find price box')
+            return
+        price_strong = price_box.find('strong')
+
+        return price_strong.text if price_strong else None
 
     def _get_url_from_search_result(self, item: Tag) -> Optional[Text]:
         info_box = item.find('div', {'class': 'item-info'})
@@ -142,6 +97,13 @@ class NeweggParser(ParserBase):
             return True
         else:
             return False
+
+    def _get_title_from_product_page(self, page: BeautifulSoup) -> Optional[Text]:
+        title_box = page.find('h1', {'class': 'product-title'})
+        if not title_box:
+            log.error('Failed to find title box')
+            return
+        return title_box.text
 
     def _is_in_stock_product_page(self, page: BeautifulSoup) -> bool:
         buy_box = page.find('div', {'id': 'ProductBuy'})
@@ -171,7 +133,11 @@ class NeweggParser(ParserBase):
         return sku
 
     def _get_price_from_product_page(self, page: BeautifulSoup) -> Optional[Text]:
-        price_box = page.find('li', {'class': 'price-current'})
+        buy_box = page.find('div', {'class': 'product-buy-box'})
+        if not buy_box:
+            log.error('Failed to find buy box')
+            return
+        price_box = buy_box.find('li', {'class': 'price-current'})
         if not price_box:
             log.error('Failed to find price box')
             return
@@ -183,17 +149,9 @@ class NeweggParser(ParserBase):
         log.debug('Price is %s', price)
         return price
 
-    def _load_page(self, url: Text) -> Optional[Text]:
-        try:
-            headers = {'User-Agent': random.choice(USER_AGENTS)}
-            r = requests.get(url, headers)
-        except (ConnectionError, Timeout):
-            log.error('Failed to load URL: %s', url)
-            return
-        if r.status_code != 200:
-            log.error('Unexpected Status Code %s for URL %s', r.status_code, url)
-            return
-        return r.text
+    def _get_search_results(self, page: BeautifulSoup) -> List[Tag]:
+        result_container = page.find('div', {'class': 'list-wrap'})
+        return result_container.findAll('div', {'class': 'item-cell'})
 
     def _is_combo_page(self, page: BeautifulSoup) -> bool:
         """
@@ -211,5 +169,12 @@ class NeweggParser(ParserBase):
             return True
         if 'combo' in current_item.text.lower():
             log.debug('Current page is combo page')
+            return True
+        return False
+
+    def _is_sponsored_search_result(self, result: Tag) -> bool:
+        ad_box = result.find('a', {'class': 'txt-ads-box'})
+        if ad_box:
+            log.info('Skipping ad in search results')
             return True
         return False

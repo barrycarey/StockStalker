@@ -119,3 +119,12 @@ class TestWalmartParser(TestCase):
     def test__is_sponsored_search_result_no(self):
         page = self.get_search_result()
         self.assertFalse(self.parser._is_sponsored_search_result(page))
+
+    def test__get_title_from_product_page_valid_return_title(self):
+        page = self.get_product_page_in_stock()
+        self.assertEqual('Sony PlayStation 5 DualSense Wireless Controller', self.parser._get_title_from_product_page(page))
+
+    def test__get_title_from_product_page_missing_title_return_none(self):
+        page = self.get_product_page_in_stock()
+        page.find('h1', {'class': 'prod-ProductTitle'}).decompose()
+        self.assertIsNone(self.parser._get_title_from_product_page(page))

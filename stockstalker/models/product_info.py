@@ -14,7 +14,7 @@ class ProductInfo:
 
     def to_dict(self):
         return {
-            'title': self.title,
+            'title': self.title[0:50],
             'url': self.url,
             'in_stock': self.in_stock,
             'price': self.price,

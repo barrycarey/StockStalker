@@ -1,0 +1,28 @@
+{
+  "name": "Newegg",
+  "links": {
+    "product_pages": [
+      "https://www.newegg.com/msi-geforce-rtx-3080-rtx3080-suprim-x-10g/p/N82E16814137609?Item=N82E16814137609"
+    ],
+    "search_pages": [
+      "https://www.newegg.com/p/pl?d=rtx+3080&PageSize=96&N=8000",
+      "https://www.newegg.com/p/pl?d=rtx+3090&PageSize=96&N=8000",
+      "https://www.newegg.com/p/pl?d=rtx+3070&PageSize=96&N=8000",
+      "https://www.newegg.com/p/pl?d=rtx+3060&PageSize=96&N=8000"
+    ]
+  },
+  "ignore_title_keywords": [
+    "gladiator",
+    "desktop"
+  ],
+  "ignore_urls": [
+
+  ],
+  "notification_agents": [
+    {
+      "name": "discord",
+      "webhook": "https://discordapp.com/api/webhooks/786096935039139840/RnKGFPi0aMKqSMUie1CcXHNig3tRY33JBKQQWU_v-Q4c1PHrD-l0czd9mhH94PxR1SJk"
+    }
+
+  ]
+}
