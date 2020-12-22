@@ -3,7 +3,8 @@ from typing import List, Text, NoReturn, Dict, Optional
 
 import requests
 from bs4 import BeautifulSoup, Tag
-from requests import Timeout
+from fake_useragent import UserAgent
+from requests import Timeout, ConnectionError
 
 from stockstalker.common.logging import log
 from stockstalker.models.product_info import ProductInfo
@@ -105,9 +106,11 @@ class ParserBase:
     def check_product_pages(self) -> List[ProductInfo]:
         raise NotImplementedError
 
-    def _load_page(self, url: Text) -> Optional[Text]:
+    def _load_page(self, url: Text, user_agent=None) -> Optional[Text]:
+        ua = UserAgent(cache=False)
         try:
-            headers = {'User-Agent': random.choice(USER_AGENTS)}
+            headers = {'User-Agent': user_agent or ua.chrome}
+            log.debug('User Agent: %s', headers['User-Agent'])
             r = requests.get(url, headers=headers)
         except (ConnectionError, Timeout):
             log.error('Failed to load URL: %s', url)

@@ -1,91 +1,139 @@
-from typing import List, Text, NoReturn, Dict
+from typing import List, Text, NoReturn, Dict, Optional
 
 from bs4 import Tag, BeautifulSoup
 
+from stockstalker.common.logging import log
+from stockstalker.models.product_info import ProductInfo
 from stockstalker.services.notification_svc import NotificationSvc
 from stockstalker.parsers.parser_base import ParserBase
 
 
 class BestBuyParser(ParserBase):
+
     def __init__(
             self,
             notification_svc: NotificationSvc,
+            name: Text,
             search_pages: List[Text] = None,
             product_pages: List[Text] = None,
-            web_driver: Text = None):
+            ignore_urls: List[Text] = None,
+            ignore_title_keywords: List[Text] = None
+    ):
+        super().__init__(notification_svc, name, search_pages, product_pages, ignore_urls=ignore_urls,
+                         ignore_title_keywords=ignore_title_keywords)
 
-        super().__init__(notification_svc, search_pages, product_pages, web_driver)
 
+    def check_product_pages(self) -> List[ProductInfo]:
+        all_results = []
+        for url in self.product_pages:
+            log.info('Checking product page: %s', url)
+            page_source = self._load_page(url)
+            page = BeautifulSoup(page_source, 'html.parser')
 
+            result = self.parse_product_page(page)
+            if result:
+                result.url = url
+                all_results.append(result)
+        return all_results
 
+    def _is_in_stock_search_result(self, page: BeautifulSoup) -> bool:
+        price_block = page.find('div', {'class': 'price-block'})
+        if not price_block:
+            log.error('Failed to find price block')
+            return False
+        add_to_cart_btn = price_block.find('button', {'class': 'add-to-cart-button'})
+        if not add_to_cart_btn:
+            log.error('Failed to find add to cart button')
+            return False
+        if add_to_cart_btn.text.lower() == 'add to cart':
+            return True
+        return False
 
-    def _get_cart_text_search_page(self, item: Tag) -> Text:
-        button_box = item.find('div', {'class': 'sku-list-item-button'})
-        add_to_cart_btn = button_box.find('button')
-        return add_to_cart_btn.text
+    def _get_title_from_search_result(self, item: Tag) -> Optional[Text]:
+        title_box = item.find('h4', {'class': 'sku-header'})
+        if not title_box:
+            log.error('Failed to find title box')
+            return
+        title_a = title_box.find('a')
+        if not title_a:
+            log.error('Failed to find title a tag')
+            return
+        return title_a.text
 
-    def parse_search_pages(self, page) -> List[Dict]:
-        results = []
-        search_results = page.find('ol', {'class': 'sku-item-list'})
-        items = search_results.findAll('li', {'class': 'sku-item'})
-        for i in items:
-            results.append(self._get_product_data_from_search_result(i))
-        return results
+    def _get_url_from_search_result(self, item: Tag) -> Optional[Text]:
+        title_box = item.find('h4', {'class': 'sku-header'})
+        if not title_box:
+            log.error('Failed to find title box')
+            return
+        title_a = title_box.find('a')
+        if not title_a:
+            log.error('Failed to find title a tag')
+            return
+        url = title_a['href']
+        if 'bestbuy.com' not in url:
+            url = 'https://bestbuy.com' + url
+        return url
 
-    def check_stock(self) -> NoReturn:
-        for page in self.search_pages:
-            page_source = self._load_page(page)
-            page = BeautifulSoup(page_source)
-            product_data = self.parse_search_pages(page)
-            for d in product_data:
-                if d['in_stock']:
-                    self.notification_svc.send_notificaiton(d)
+    def _get_price_from_search_result(self, item: Tag) -> Optional[Text]:
+        price_box = item.find('div', {'class': 'priceView-customer-price'})
+        if not price_box:
+            log.error('Failed to get price box')
+            return
+        price_span = price_box.find('span')
+        if not price_span:
+            log.error('Failed to find price span')
+            return
+        return price_span.text
 
-    def _get_product_data_from_search_result(self, search_result_tag: Tag) -> Dict:
-        result = {
-            'title': None,
-            'sku': None,
-            'url': None,
-            'in_stock': False,
-            'price': None
-        }
-        add_to_cart_btn_text = self._get_cart_text_search_page(search_result_tag)
-        result['title'], result['url'] = self._get_title_and_url_from_search_result(search_result_tag)
-        result['sku'] = self._get_sku_from_search_result(search_result_tag)
-        result['price'] = self._get_price_from_search_result(search_result_tag)
-        if add_to_cart_btn_text.lower() == 'sold out':
-            result['in_stock'] = False
-        else:
-            result['in_stock'] = True
+    def _get_title_from_product_page(self, page: BeautifulSoup) -> Optional[Text]:
+        title_box = page.find('div', {'class': 'sku-title'})
+        if not title_box:
+            log.error('Failed to find title box')
+            return
+        return title_box.text
 
-        return result
+    def _is_in_stock_product_page(self, page: BeautifulSoup) -> bool:
+        add_to_cart_box = page.find('div', {'class': 'fulfillment-add-to-cart-button'})
+        if not add_to_cart_box:
+            log.error('Failed to find add  to cart button')
+            return False
+        add_to_cart_btn = add_to_cart_box.find('button')
+        if not add_to_cart_btn:
+            log.error('Failed to find add to cart button')
+            return False
+        if add_to_cart_btn.text.lower() == 'add to cart':
+            return True
+        return False
 
-    def _get_price_from_search_result(self, item: Tag) -> Text:
-        price_box = item.find('div', {'class': 'priceView-hero-price priceView-customer-price'})
-        price = price_box.findAll('span')
-        return price[0].text
+    def _get_sku_from_product_page(self, page: BeautifulSoup) -> Optional[Text]:
+        sku_box = page.find('div', {'class': 'sku product-data'})
+        if not sku_box:
+            log.error('Failed to find SKU box')
+            return
+        sku_value = sku_box.find('span', {'class': 'product-data-value'})
+        if not sku_value:
+            log.error('Failed to find SKU value')
+            return
+        return sku_value.text.strip()
 
-    def _get_sku_from_search_result(self, item: Tag) -> Text:
-        sku_boxes = item.findAll('div', {'class': 'sku-attribute-title'})
-        for box in sku_boxes:
-            if box.find('span', {'class': 'attribute-title'}).text == 'SKU:':
-                return box.find('span', {'class': 'sku-value'}).text
+    def _get_price_from_product_page(self, page: BeautifulSoup) -> Optional[Text]:
+        price_box = page.find('div', {'class': 'priceView-customer-price'})
+        if not price_box:
+            log.error('Failed to find price box')
+            return
+        price_span = price_box.find('span')
+        if not price_span:
+            log.error('Failed to find Price Span')
+            return
+        return price_span.text.strip()
 
-    def _get_title_and_url_from_search_result(self, item: Tag):
-        url_a = item.find('h4', {'class': 'sku-header'}).find('a')
-        url = 'https://bestbuy.com' + url_a['href']
-        title = url_a.text
-        return title, url
+    def _get_search_results(self, page: BeautifulSoup) -> List[Tag]:
+        return page.findAll('li', {'class': 'sku-item'})
 
-    def parse_product_page(self):
+    def _is_sponsored_search_result(self, result: Tag) -> bool:
         pass
 
-if __name__ == '__main__':
-    search_pages = [
-        'https://www.bestbuy.com/site/searchpage.jsp?st=rtx+3080&_dyncharset=UTF-8&_dynSessConf=&id=pcat17071&type=page&sc=Global&cp=1&nrp=&sp=&qp=&list=n&af=true&iht=y&usc=All+Categories&ks=960&keys=keys']
-    product_pages = [
-        'https://www.bestbuy.com/site/evga-geforce-rtx-3080-xc3-ultra-gaming-10gb-gddr6-pci-express-4-0-graphics-card/6432400.p?skuId=6432400'
-    ]
-
-    parser = BestBuyParser(None, search_pages=search_pages, web_driver=r"C:\chromedriver\chromedriver.exe")
-    parser.check_stock()
+    def _load_page(self, url: Text, user_agent=None) -> Optional[Text]:
+        # For some reason most user agents cause request to time out
+        ua = 'Mozilla/4.0 (compatible; MSIE 9.0; Windows NT 6.1)'
+        return super(BestBuyParser, self)._load_page(url, user_agent=ua)

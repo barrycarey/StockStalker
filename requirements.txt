@@ -4,3 +4,4 @@ selenium
 discord
 apscheduler
 requests-html
+fake-useragent

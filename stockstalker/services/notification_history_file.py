@@ -22,12 +22,12 @@ class NotificationHistoryFile(NotificationHistoryBase):
             return
         with open(self.history_file_name, 'r') as f:
             for line in f:
-                self.sent_notifications.append(line)
+                self.sent_notifications.append(line.strip('\n'))
         log.info('Loaded %s notifications from history', len(self.sent_notifications))
 
     def add_history(self, identifier: Text):
         with open(self.history_file_name, 'a') as f:
-            f.write(identifier)
+            f.write(identifier + '\n')
             log.debug('Added 1 entry to notification history with identifer %s', identifier)
 
     def clear_history(self):

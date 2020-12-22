@@ -90,11 +90,11 @@ class TestWalmartParser(TestCase):
 
     def test__get_sku_from_product_page(self):
         page = self.get_product_page_in_stock()
-        self.assertEqual('585806399', self.parser._get_sku_from_product_page(page))
+        self.assertEqual('575782833', self.parser._get_sku_from_product_page(page))
 
     def test__get_price_from_product_page_valid(self):
         page = self.get_product_page_in_stock()
-        self.assertEqual('$69.96', self.parser._get_price_from_product_page(page))
+        self.assertEqual('$49.94', self.parser._get_price_from_product_page(page))
 
     def test__get_price_from_product_page_no_price(self):
         page = self.get_product_page_in_stock()
@@ -122,7 +122,7 @@ class TestWalmartParser(TestCase):
 
     def test__get_title_from_product_page_valid_return_title(self):
         page = self.get_product_page_in_stock()
-        self.assertEqual('Sony PlayStation 5 DualSense Wireless Controller', self.parser._get_title_from_product_page(page))
+        self.assertEqual('Cyberpunk 2077, Warner Bros, PlayStation 4', self.parser._get_title_from_product_page(page))
 
     def test__get_title_from_product_page_missing_title_return_none(self):
         page = self.get_product_page_in_stock()
